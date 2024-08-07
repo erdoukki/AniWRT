@@ -20,20 +20,20 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential libncurses5-dev gawk git subversion libssl-dev gettext unzip zlib1g-dev file wget
-        wget https://downloads.openwrt.org/releases/22.03.0/targets/x86/64/openwrt-imagebuilder-22.03.0-x86-64.Linux-x86_64.tar.xz
-        tar -xf openwrt-imagebuilder-22.03.0-x86-64.Linux-x86_64.tar.xz
+        wget https://downloads.openwrt.org/releases/23.05.4/targets/armsr/armv8/openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64.tar.xz
+        tar -xf openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64.tar.xz
 
     - name: Build OpenWrt Image
       run: |
-        cd openwrt-imagebuilder-22.03.0-x86-64.Linux-x86_64
+        cd openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64
         make image PROFILE=generic PACKAGES="luci luci-app-opkg"
 
-    - name: Archive build artifacts
-      if: success()
+    - name: Get Image Filename
+      id: get_image_filename
       run: |
-        cd openwrt-imagebuilder-22.03.0-x86-64.Linux-x86_64/bin/targets/x86/64
-        tar -czvf openwrt-image.tar.gz *
-      shell: bash
+        cd openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64/bin/targets/armsr/armv8
+        IMAGE_FILE=$(ls openwrt-*.img.gz)
+        echo "::set-output name=image_file::$IMAGE_FILE"
 
     - name: Create GitHub Release
       id: create_release
@@ -52,6 +52,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: openwrt-imagebuilder-22.03.0-x86-64.Linux-x86_64/bin/targets/x86/64/openwrt-image.tar.gz
-        asset_name: openwrt-image.tar.gz
+        asset_path: openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64/bin/targets/armsr/armv8/${{ steps.get_image_filename.outputs.image_file }}
+        asset_name: ${{ steps.get_image_filename.outputs.image_file }}
         asset_content_type: application/gzip
