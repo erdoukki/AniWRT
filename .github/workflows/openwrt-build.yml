@@ -1,12 +1,17 @@
 name: Build OpenWrt Image
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+  workflow_dispatch:
+    inputs:
+      enable_mod_boot_sdcard:
+        description: 'Enable mod-boot-sdcard'
+        required: true
+        default: 'false'
+        type: boolean
+      mod_boot_sdcard_branch:
+        description: 'Branch of mod-boot-sdcard to use'
+        required: false
+        default: 'master'
 
 jobs:
   build:
@@ -23,10 +28,17 @@ jobs:
         wget https://downloads.openwrt.org/releases/23.05.4/targets/armsr/armv8/openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64.tar.xz
         tar -xf openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64.tar.xz
 
+    - name: Clone mod-boot-sdcard repository
+      if: ${{ github.event.inputs.enable_mod_boot_sdcard == 'true' }}
+      run: |
+        git clone --branch ${{ github.event.inputs.mod_boot_sdcard_branch }} https://github.com/msidiq22/mod-boot-sdcard
+        mkdir -p openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64/files/boot
+        cp -r mod-boot-sdcard/* openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64/files/boot/
+
     - name: Build OpenWrt Image
       run: |
         cd openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64
-        make image PROFILE=generic PACKAGES="luci luci-app-opkg"
+        make image PROFILE=generic PACKAGES="luci luci-app-opkg" FILES="files/"
 
     - name: Get Image Filename
       id: get_image_filename
