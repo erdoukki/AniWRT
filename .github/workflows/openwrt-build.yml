@@ -3,15 +3,26 @@ name: Build OpenWrt Image
 on:
   workflow_dispatch:
     inputs:
-      enable_mod_boot_sdcard:
+      enable_mod_sdcard:
         description: 'Enable mod-boot-sdcard'
         required: true
         default: 'false'
         type: boolean
-      mod_boot_sdcard_branch:
-        description: 'Branch of mod-boot-sdcard to use'
-        required: false
-        default: 'master'
+      openwrt_version:
+        description: 'OpenWrt version to use'
+        required: true
+        default: '23.05.4'
+        type: string
+      device_profile:
+        description: 'Device profile to build for'
+        required: true
+        default: 'generic'
+        type: string
+      kernel_version:
+        description: 'Kernel version to use'
+        required: true
+        default: '5.15'
+        type: string
 
 jobs:
   build:
@@ -25,25 +36,25 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential libncurses5-dev gawk git subversion libssl-dev gettext unzip zlib1g-dev file wget
-        wget https://downloads.openwrt.org/releases/23.05.4/targets/armsr/armv8/openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64.tar.xz
-        tar -xf openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64.tar.xz
+        wget https://downloads.openwrt.org/releases/${{ github.event.inputs.openwrt_version }}/targets/armsr/armv8/openwrt-imagebuilder-${{ github.event.inputs.openwrt_version }}-armsr-armv8.Linux-x86_64.tar.xz
+        tar -xf openwrt-imagebuilder-${{ github.event.inputs.openwrt_version }}-armsr-armv8.Linux-x86_64.tar.xz
 
-    - name: Clone mod-boot-sdcard repository
-      if: ${{ github.event.inputs.enable_mod_boot_sdcard == 'true' }}
+    - name: Optionally clone mod-boot-sdcard repository
+      if: ${{ github.event.inputs.enable_mod_sdcard }}
       run: |
-        git clone --branch ${{ github.event.inputs.mod_boot_sdcard_branch }} https://github.com/msidiq22/mod-boot-sdcard
-        mkdir -p openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64/files/boot
-        cp -r mod-boot-sdcard/* openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64/files/boot/
+        git clone https://github.com/msidiq22/mod-boot-sdcard
+        mkdir -p openwrt-imagebuilder-${{ github.event.inputs.openwrt_version }}-armsr-armv8.Linux-x86_64/files/boot
+        cp -r mod-boot-sdcard/* openwrt-imagebuilder-${{ github.event.inputs.openwrt_version }}-armsr-armv8.Linux-x86_64/files/boot/
 
     - name: Build OpenWrt Image
       run: |
-        cd openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64
-        make image PROFILE=generic PACKAGES="luci luci-app-opkg" FILES="files/"
+        cd openwrt-imagebuilder-${{ github.event.inputs.openwrt_version }}-armsr-armv8.Linux-x86_64
+        make image PROFILE=${{ github.event.inputs.device_profile }} PACKAGES="luci luci-app-opkg" FILES="files/"
 
     - name: Get Image Filename
       id: get_image_filename
       run: |
-        cd openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64/bin/targets/armsr/armv8
+        cd openwrt-imagebuilder-${{ github.event.inputs.openwrt_version }}-armsr-armv8.Linux-x86_64/bin/targets/armsr/armv8
         IMAGE_FILE=$(ls openwrt-*.img.gz)
         echo "::set-output name=image_file::$IMAGE_FILE"
 
@@ -64,6 +75,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: openwrt-imagebuilder-23.05.4-armsr-armv8.Linux-x86_64/bin/targets/armsr/armv8/${{ steps.get_image_filename.outputs.image_file }}
+        asset_path: openwrt-imagebuilder-${{ github.event.inputs.openwrt_version }}-armsr-armv8.Linux-x86_64/bin/targets/armsr/armv8/${{ steps.get_image_filename.outputs.image_file }}
         asset_name: ${{ steps.get_image_filename.outputs.image_file }}
         asset_content_type: application/gzip
