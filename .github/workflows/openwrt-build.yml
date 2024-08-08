@@ -37,7 +37,7 @@ on:
         type: boolean
 
 jobs:
-  build:
+  Build AniWRT:
     runs-on: ubuntu-latest
 
     steps:
@@ -83,7 +83,7 @@ jobs:
         else
           cd immortalwrt-imagebuilder-${{ env.version }}-armsr-armv8.Linux-x86_64
         fi
-        make image PROFILE=generic PACKAGES="luci luci-compat luci-lib-ipkg luci-lib-ip wireless-tools wpa-cli wpa-supplicant wireless-regdb libiwinfo libiwinfo-lua libiwinfo-data kmod-ath kmod-ath9k kmod-ath9k-common kmod-ath9k-htc kmod-cfg80211 kmod-crypto-acompress kmod-crypto-crc32c kmod-crypto-hash kmod-fs-btrfs kmod-mac80211 kmod-brcmutil kmod-brcmfmac kmod-usb2 ath9k-htc-firmware hostapd hostapd-utils btrfs-progs" FILES="files/" CONFIG_TARGET_ROOTFS_PARTSIZE=${{ github.event.inputs.rootfs_partsize }}
+        make image PROFILE=generic PACKAGES="luci luci-compat luci-lib-ipkg luci-lib-ip wireless-tools wpa-cli wpa-supplicant wireless-regdb libiwinfo libiwinfo-lua libiwinfo-data kmod-ath kmod-ath9k kmod-ath9k-common kmod-ath9k-htc kmod-cfg80211 kmod-crypto-acompress kmod-crypto-crc32c kmod-crypto-hash kmod-fs-btrfs kmod-mac80211 kmod-brcmutil kmod-brcmfmac kmod-usb2 ath9k-htc-firmware hostapd hostapd-utils btrfs-progs" FILES="files/" ROOTFS_PARTSIZE=${{ github.event.inputs.rootfs_partsize }}
 
     - name: Get Image Filename
       id: get_image_filename
