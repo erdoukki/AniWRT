@@ -47,9 +47,19 @@ jobs:
         cd builder
         make image PROFILE=generic ROOTFS_PARTSIZE=$ROOTFS_SIZE
         mkdir -p output
+        # Tambahkan langkah untuk debug
+        echo "Files in bin/targets/armsr/armv8:"
+        ls bin/targets/armsr/armv8
+
         # Temukan file image yang dihasilkan dan salin ke direktori output
         IMAGE_FILE=$(find bin/targets/armsr/armv8 -name '*.img' | head -n 1)
-        cp "$IMAGE_FILE" output/
+        echo "Found image file: $IMAGE_FILE"
+        if [ -n "$IMAGE_FILE" ]; then
+          cp "$IMAGE_FILE" output/
+        else
+          echo "No image file found. Exiting."
+          exit 1
+        fi
 
     - name: Create Release
       id: create_release
