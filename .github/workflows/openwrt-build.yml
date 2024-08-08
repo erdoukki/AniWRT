@@ -91,9 +91,9 @@ jobs:
         if [ "${{ env.system }}" = "openwrt" ]; then
           cd openwrt-imagebuilder-${{ env.version }}-armsr-armv8.Linux-x86_64/bin/targets/armsr/armv8
         else
-          cd immortalwrt-imagebuilder-${{ env.version }}-armsr-armv8/bin/targets/armsr/armv8
+          cd immortalwrt-imagebuilder-${{ env.version }}-armsr-armv8.Linux-x86_64/bin/targets/armsr/armv8
         fi
-        IMAGE_FILE=$(ls openwrt-*.img.gz || ls immortalwrt-*.img.gz)
+        IMAGE_FILE=$(ls *.img.gz)
         echo "image_file=$IMAGE_FILE" >> $GITHUB_ENV
 
     - name: Create GitHub Release
