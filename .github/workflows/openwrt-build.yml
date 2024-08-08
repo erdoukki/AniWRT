@@ -3,7 +3,7 @@ name: Build AniWRT
 on:
   workflow_dispatch:
     inputs:
-      version:
+      resources:
         description: 'Pilih versi OpenWrt atau ImmortalWRT'
         required: true
         type: string
@@ -25,28 +25,19 @@ jobs:
     - name: Set up Image Builder
       id: setup
       run: |
-        VERSION="${{ github.event.inputs.version }}"
+        RESOURCES="${{ github.event.inputs.resources }}"
         ROOTFS_SIZE="${{ github.event.inputs.rootfs_size }}"
 
         # Pisahkan VERSION menjadi version1 dan version2
-        IFS=':' read -r version1 version2 <<< "$VERSION"
+        IFS=':' read -r base version <<< "$RESOURCES"
 
-        echo "Version1: $version1"
-        echo "Version2: $version2"
+        echo "Base: $base"
+        echo "Version: $version"
 
         # Mapping version1 dan version2 ke URL
-        case "$version1" in
-          openwrt)
-            URL="https://downloads.openwrt.org/releases/$version2/targets/armsr/armv8/openwrt-imagebuilder-$version2-armsr-armv8.Linux-x86_64.tar.xz"
-            ;;
-          immortalwrt)
-            URL="https://downloads.immortalwrt.org/releases/$version2/targets/armsr/armv8/immortalwrt-imagebuilder-$version2-armsr-armv8.Linux-x86_64.tar.xz"
-            ;;
-        esac
-
-        wget $URL -O imagebuilder.tar.xz
+        wget https://downloads.$base.org/releases/$version/targets/armsr/armv8/$base-imagebuilder-$version-armsr-armv8.Linux-x86_64.tar.xz -O imagebuilder.tar.xz
         tar -xf imagebuilder.tar.xz
-        cd openwrt-imagebuilder* || exit
+        ls
 
     - name: Build Image
       run: |
