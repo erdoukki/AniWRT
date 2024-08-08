@@ -31,7 +31,7 @@ on:
         default: '256'
         type: string
       enable_mod_sdcard:
-        description: 'Enable mod-boot-sdcard'
+        description: 'Enable mod-boot-sdcard (select true or false)'
         required: true
         default: 'false'
         type: boolean
@@ -47,54 +47,54 @@ jobs:
     - name: Parse system and version
       id: parse_system_version
       run: |
-        system="${{ github.event.inputs.resources%%:* }}"
-        version="${{ github.event.inputs.resources##*: }}"
-        echo "::set-output name=system::$system"
-        echo "::set-output name=version::$version"
+        system=$(echo "${{ github.event.inputs.resources }}" | cut -d':' -f1)
+        version=$(echo "${{ github.event.inputs.resources }}" | cut -d':' -f2)
+        echo "system=$system" >> $GITHUB_ENV
+        echo "version=$version" >> $GITHUB_ENV
 
     - name: Set up Image Builder environment
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential libncurses5-dev gawk git subversion libssl-dev gettext unzip zlib1g-dev file wget
-        if [ "${{ steps.parse_system_version.outputs.system }}" = "openwrt" ]; then
-          wget https://downloads.openwrt.org/releases/${{ steps.parse_system_version.outputs.version }}/targets/armsr/armv8/openwrt-imagebuilder-${{ steps.parse_system_version.outputs.version }}-armsr-armv8.Linux-x86_64.tar.xz
-          tar -xf openwrt-imagebuilder-${{ steps.parse_system_version.outputs.version }}-armsr-armv8.Linux-x86_64.tar.xz
+        if [ "${{ env.system }}" = "openwrt" ]; then
+          wget https://downloads.openwrt.org/releases/${{ env.version }}/targets/armsr/armv8/openwrt-imagebuilder-${{ env.version }}-armsr-armv8.Linux-x86_64.tar.xz
+          tar -xf openwrt-imagebuilder-${{ env.version }}-armsr-armv8.Linux-x86_64.tar.xz
         else
-          wget https://downloads.immortalwrt.org/releases/${{ steps.parse_system_version.outputs.version }}/targets/armsr/armv8/immortalwrt-imagebuilder-${{ steps.parse_system_version.outputs.version }}-armsr-armv8.Linux-x86_64.tar.xz
-          tar -xf immortalwrt-imagebuilder-${{ steps.parse_system_version.outputs.version }}-armsr-armv8.Linux-x86_64.tar.xz
+          wget https://downloads.immortalwrt.org/releases/${{ env.version }}/targets/armsr/armv8/immortalwrt-imagebuilder-${{ env.version }}-armsr-armv8.Linux-x86_64.tar.xz
+          tar -xf immortalwrt-imagebuilder-${{ env.version }}-armsr-armv8.Linux-x86_64.tar.xz
         fi
 
     - name: Optionally clone mod-boot-sdcard repository
       if: ${{ github.event.inputs.enable_mod_sdcard }}
       run: |
         git clone https://github.com/msidiq22/mod-boot-sdcard
-        if [ "${{ steps.parse_system_version.outputs.system }}" = "openwrt" ]; then
-          mkdir -p openwrt-imagebuilder-${{ steps.parse_system_version.outputs.version }}-armsr-armv8.Linux-x86_64/files/boot
-          cp -r mod-boot-sdcard/* openwrt-imagebuilder-${{ steps.parse_system_version.outputs.version }}-armsr-armv8.Linux-x86_64/files/boot/
+        if [ "${{ env.system }}" = "openwrt" ]; then
+          mkdir -p openwrt-imagebuilder-${{ env.version }}-armsr-armv8.Linux-x86_64/files/boot
+          cp -r mod-boot-sdcard/* openwrt-imagebuilder-${{ env.version }}-armsr-armv8.Linux-x86_64/files/boot/
         else
-          mkdir -p immortalwrt-imagebuilder-${{ steps.parse_system_version.outputs.version }}-armsr-armv8.Linux-x86_64/files/boot
-          cp -r mod-boot-sdcard/* immortalwrt-imagebuilder-${{ steps.parse_system_version.outputs.version }}-armsr-armv8.Linux-x86_64/files/boot/
+          mkdir -p immortalwrt-imagebuilder-${{ env.version }}-armsr-armv8.Linux-x86_64/files/boot
+          cp -r mod-boot-sdcard/* immortalwrt-imagebuilder-${{ env.version }}-armsr-armv8.Linux-x86_64/files/boot/
         fi
 
     - name: Build Image
       run: |
-        if [ "${{ steps.parse_system_version.outputs.system }}" = "openwrt" ]; then
-          cd openwrt-imagebuilder-${{ steps.parse_system_version.outputs.version }}-armsr-armv8.Linux-x86_64
+        if [ "${{ env.system }}" = "openwrt" ]; then
+          cd openwrt-imagebuilder-${{ env.version }}-armsr-armv8.Linux-x86_64
         else
-          cd immortalwrt-imagebuilder-${{ steps.parse_system_version.outputs.version }}-armsr-armv8.Linux-x86_64
+          cd immortalwrt-imagebuilder-${{ env.version }}-armsr-armv8.Linux-x86_64
         fi
         make image PROFILE=generic PACKAGES="luci luci-compat luci-lib-ipkg luci-lib-ip wireless-tools wpa-cli wpa-supplicant wireless-regdb libiwinfo libiwinfo-lua libiwinfo-data kmod-ath kmod-ath9k kmod-ath9k-common kmod-ath9k-htc kmod-cfg80211 kmod-crypto-acompress kmod-crypto-crc32c kmod-crypto-hash kmod-fs-btrfs kmod-mac80211 kmod-brcmutil kmod-brcmfmac kmod-usb2 ath9k-htc-firmware hostapd hostapd-utils btrfs-progs" FILES="files/" CONFIG_TARGET_ROOTFS_PARTSIZE=${{ github.event.inputs.rootfs_partsize }}
 
     - name: Get Image Filename
       id: get_image_filename
       run: |
-        if [ "${{ steps.parse_system_version.outputs.system }}" = "openwrt" ]; then
-          cd openwrt-imagebuilder-${{ steps.parse_system_version.outputs.version }}-armsr-armv8.Linux-x86_64/bin/targets/armsr/armv8
+        if [ "${{ env.system }}" = "openwrt" ]; then
+          cd openwrt-imagebuilder-${{ env.version }}-armsr-armv8.Linux-x86_64/bin/targets/armsr/armv8
         else
-          cd immortalwrt-imagebuilder-${{ steps.parse_system_version.outputs.version }}-armsr-armv8/bin/targets/armsr/armv8
+          cd immortalwrt-imagebuilder-${{ env.version }}-armsr-armv8/bin/targets/armsr/armv8
         fi
         IMAGE_FILE=$(ls openwrt-*.img.gz || ls immortalwrt-*.img.gz)
-        echo "::set-output name=image_file::$IMAGE_FILE"
+        echo "image_file=$IMAGE_FILE" >> $GITHUB_ENV
 
     - name: Create GitHub Release
       id: create_release
@@ -103,7 +103,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: v${{ github.run_number }}
-        release_name: ${{ steps.parse_system_version.outputs.system }} Image Build ${{ github.run_number }}
+        release_name: ${{ env.system }} Image Build ${{ github.run_number }}
         draft: false
         prerelease: false
 
@@ -113,6 +113,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ steps.parse_system_version.outputs.system == 'openwrt' && 'openwrt-imagebuilder' || 'immortalwrt-imagebuilder' }}/${{ steps.parse_system_version.outputs.version }}/bin/targets/armsr/armv8/${{ steps.get_image_filename.outputs.image_file }}
-        asset_name: ${{ steps.get_image_filename.outputs.image_file }}
+        asset_path: ${{ env.system }}-imagebuilder-${{ env.version }}/bin/targets/armsr/armv8/${{ env.image_file }}
+        asset_name: ${{ env.image_file }}
         asset_content_type: application/gzip
