@@ -18,7 +18,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      release_id: ${{ steps.create_release.outputs.release_id }}
+      release_id: ${{ steps.create_release.outputs.id }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
 
     steps:
@@ -30,36 +30,19 @@ jobs:
       run: |
         RESOURCES="${{ github.event.inputs.resources }}"
         ROOTFS_SIZE="${{ github.event.inputs.rootfs_size }}"
-
-        # Pisahkan RESOURCES menjadi base dan version
         IFS=':' read -r base version <<< "$RESOURCES"
-
         echo "Base: $base"
         echo "Version: $version"
-
-        # Mapping base dan version ke URL
         wget https://downloads.$base.org/releases/$version/targets/armsr/armv8/$base-imagebuilder-$version-armsr-armv8.Linux-x86_64.tar.xz -O imagebuilder.tar.xz
         mkdir builder
         tar -xf imagebuilder.tar.xz -C builder --strip-components=1
+        cd builder
 
     - name: Build Image
       run: |
-        cd builder
         make image PROFILE=generic ROOTFS_PARTSIZE=$ROOTFS_SIZE
-        mkdir -p output
-        # Tambahkan langkah untuk debug
-        echo "Files in bin/targets/armsr/armv8:"
-        ls bin/targets/armsr/armv8
-
-        # Temukan file image yang dihasilkan dan salin ke direktori output
-        IMAGE_FILE=$(find bin/targets/armsr/armv8 -name '*.img' | head -n 1)
-        echo "Found image file: $IMAGE_FILE"
-        if [ -n "$IMAGE_FILE" ]; then
-          cp "$IMAGE_FILE" output/
-        else
-          echo "No image file found. Exiting."
-          exit 1
-        fi
+        IMAGE_FILE=$(find bin/targets/armsr/armv8 -name "$base-$version-armsr-armv8-generic-ext4-combined.img.gz")
+        echo "IMAGE_FILE=${IMAGE_FILE}" >> $GITHUB_ENV
 
     - name: Create Release
       id: create_release
@@ -76,6 +59,6 @@ jobs:
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: output/*.img
-        asset_name: ${{ github.run_number }}-image.img
-        asset_content_type: application/octet-stream
+        asset_path: ${{ env.IMAGE_FILE }}
+        asset_name: ${{ github.run_number }}-image.img.gz
+        asset_content_type: application/gzip
