@@ -30,18 +30,27 @@ jobs:
       run: |
         RESOURCES="${{ github.event.inputs.resources }}"
         ROOTFS_SIZE="${{ github.event.inputs.rootfs_size }}"
+
+        # Pisahkan RESOURCES menjadi base dan version
         IFS=':' read -r base version <<< "$RESOURCES"
+
         echo "Base: $base"
         echo "Version: $version"
+
+        # Mapping base dan version ke URL
         wget https://downloads.$base.org/releases/$version/targets/armsr/armv8/$base-imagebuilder-$version-armsr-armv8.Linux-x86_64.tar.xz -O imagebuilder.tar.xz
         mkdir builder
         tar -xf imagebuilder.tar.xz -C builder --strip-components=1
-        cd builder
 
     - name: Build Image
       run: |
+        cd builder
         make image PROFILE=generic ROOTFS_PARTSIZE=$ROOTFS_SIZE
         mkdir -p output
+        # Tambahkan langkah untuk debug
+        echo "Files in bin/targets/armsr/armv8:"
+        ls bin/targets/armsr/armv8
+
         # Temukan file image yang dihasilkan dan salin ke direktori output
         IMAGE_FILE=$(find bin/targets/armsr/armv8 -name "$base-$version-armsr-armv8-generic-ext4-combined.img.gz" | head -n 1)
         echo "Found image file: $IMAGE_FILE"
