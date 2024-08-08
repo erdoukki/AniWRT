@@ -1,31 +1,40 @@
-name: Build OpenWrt or ImmortalWRT Image
+name: Build AniWRT
 
 on:
   workflow_dispatch:
     inputs:
-      enable_mod_sdcard:
-        description: 'Enable mod-boot-sdcard'
-        required: true
-        default: 'false'
-        type: boolean
-      system_version:
-        description: 'System and version to build'
+      resources:
+        description: 'Select resources'
         required: true
         default: 'openwrt:23.05.4'
         type: choice
         options:
           - 'openwrt:23.05.4'
           - 'immortalwrt:23.05.3'
-      device_profile:
-        description: 'Device profile to build for'
+      device_board:
+        description: 'Select device board'
         required: true
-        default: 'generic'
-        type: string
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'B860H'
+          - 'HG680P'
       kernel_version:
-        description: 'Kernel version to use'
+        description: 'Select kernel version'
         required: true
         default: '5.15'
         type: string
+      rootfs_partsize:
+        description: 'Set ROOTFS_PARTSIZE (MB)'
+        required: true
+        default: '256'
+        type: string
+      enable_mod_sdcard:
+        description: 'Enable mod-boot-sdcard'
+        required: true
+        default: 'false'
+        type: boolean
 
 jobs:
   build:
@@ -38,8 +47,8 @@ jobs:
     - name: Parse system and version
       id: parse_system_version
       run: |
-        system="${{ github.event.inputs.system_version%%:* }}"
-        version="${{ github.event.inputs.system_version##*: }}"
+        system="${{ github.event.inputs.resources%%:* }}"
+        version="${{ github.event.inputs.resources##*: }}"
         echo "::set-output name=system::$system"
         echo "::set-output name=version::$version"
 
@@ -74,7 +83,7 @@ jobs:
         else
           cd immortalwrt-imagebuilder-${{ steps.parse_system_version.outputs.version }}-armsr-armv8.Linux-x86_64
         fi
-        make image PROFILE=${{ github.event.inputs.device_profile }} PACKAGES="luci luci-app-opkg" FILES="files/"
+        make image PROFILE=generic PACKAGES="luci luci-compat luci-lib-ipkg luci-lib-ip wireless-tools wpa-cli wpa-supplicant wireless-regdb libiwinfo libiwinfo-lua libiwinfo-data kmod-ath kmod-ath9k kmod-ath9k-common kmod-ath9k-htc kmod-cfg80211 kmod-crypto-acompress kmod-crypto-crc32c kmod-crypto-hash kmod-fs-btrfs kmod-mac80211 kmod-brcmutil kmod-brcmfmac kmod-usb2 ath9k-htc-firmware hostapd hostapd-utils btrfs-progs" FILES="files/" CONFIG_TARGET_ROOTFS_PARTSIZE=${{ github.event.inputs.rootfs_partsize }}
 
     - name: Get Image Filename
       id: get_image_filename
