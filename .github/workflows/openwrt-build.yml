@@ -17,6 +17,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create_release.outputs.release_id }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
 
     steps:
     - name: Checkout repository
@@ -28,13 +31,13 @@ jobs:
         RESOURCES="${{ github.event.inputs.resources }}"
         ROOTFS_SIZE="${{ github.event.inputs.rootfs_size }}"
 
-        # Pisahkan VERSION menjadi version1 dan version2
+        # Pisahkan RESOURCES menjadi base dan version
         IFS=':' read -r base version <<< "$RESOURCES"
 
         echo "Base: $base"
         echo "Version: $version"
 
-        # Mapping version1 dan version2 ke URL
+        # Mapping base dan version ke URL
         wget https://downloads.$base.org/releases/$version/targets/armsr/armv8/$base-imagebuilder-$version-armsr-armv8.Linux-x86_64.tar.xz -O imagebuilder.tar.xz
         mkdir builder
         tar -xf imagebuilder.tar.xz -C builder --strip-components=1
@@ -43,11 +46,26 @@ jobs:
       run: |
         cd builder
         make image PROFILE=generic ROOTFS_PARTSIZE=$ROOTFS_SIZE
+        mkdir -p output
+        # Temukan file image yang dihasilkan dan salin ke direktori output
+        IMAGE_FILE=$(find bin/targets/armsr/armv8 -name '*.img' | head -n 1)
+        cp "$IMAGE_FILE" output/
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      with:
+        tag_name: ${{ github.run_number }}
+        release_name: Release ${{ github.run_number }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload image to GitHub Releases
       uses: actions/upload-release-asset@v1
       with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: path/to/your/image.img
-        asset_name: your-image-name.img
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: output/*.img
+        asset_name: ${{ github.run_number }}-image.img
         asset_content_type: application/octet-stream
