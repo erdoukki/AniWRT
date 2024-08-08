@@ -37,7 +37,7 @@ on:
         type: boolean
 
 jobs:
-  Build AniWRT:
+  Build_AniWRT:
     runs-on: ubuntu-latest
 
     steps:
