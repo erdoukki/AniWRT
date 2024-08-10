@@ -58,9 +58,9 @@ jobs:
         run: |
           make -C imagebuilder image PROFILE="generic" ROOTFS_PARTSIZE=${{ github.event.inputs.rootfs_partsize }}
           if [ "${{ env.DISTRO }}" == "openwrt" ]; then
-            mv imagebuilder/bin/targets/armsr/armv8/${DISTRO}-${VERSION}-armsr-armv8-generic-ext4-combined.img.gz aniwrt-${{ env.DISTRO }}-${{ env.VERSION }}.img.gz
+            mv imagebuilder/bin/targets/armsr/armv8/${DISTRO}-${VERSION}-armsr-armv8-generic-ext4-combined.img.gz imagebuilder/bin/targets/armsr/armv8/aniwrt-${{ env.DISTRO }}-${{ env.VERSION }}.img.gz
           else
-            mv imagebuilder/bin/targets/armsr/armv8/${DISTRO}-${VERSION}-armsr-armv8-generic-ext4-combined-efi.img.gz aniwrt-${{ env.DISTRO }}-${{ env.VERSION }}.img.gz
+            mv imagebuilder/bin/targets/armsr/armv8/${DISTRO}-${VERSION}-armsr-armv8-generic-ext4-combined-efi.img.gz imagebuilder/bin/targets/armsr/armv8/aniwrt-${{ env.DISTRO }}-${{ env.VERSION }}.img.gz
           fi
       - name: Debug file existence
         run: |
