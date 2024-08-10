@@ -52,7 +52,7 @@ jobs:
           mkdir imagebuilder
           tar -xf imagebuilder.tar.xz -C imagebuilder --strip-components=1
 
-      - name: Clone SD Card Mod
+      - name: MOD SD Card by msidiq22
         if: ${{ github.event.inputs.enable_mod_sdcard == 'true' }}
         run: |
           git clone https://github.com/msidiq22/mod-boot-sdcard
@@ -64,9 +64,14 @@ jobs:
           cd imagebuilder
           make image PROFILE="generic" ROOTFS_PARTSIZE=${{ github.event.inputs.rootfs_partsize }}
 
-      - name: List files in output directory
+      - name: Rename image files
         run: |
-          ls -l imagebuilder/bin/targets/armsr/armv8/
+          cd imagebuilder/bin/targets/armsr/armv8/
+          if [ "${{ env.DISTRO }}" == "openwrt" ]; then
+            mv *generic-ext4-combined.img.gz aniwrt-openwrt-${{ env.VERSION }}.img.gz
+          else
+            mv *generic-ext4-combined-efi.img.gz aniwrt-${{ env.DISTRO }}-${{ env.VERSION }}.img.gz
+          fi
 
       - name: Create GitHub Release
         id: create_release
@@ -85,6 +90,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: imagebuilder/bin/targets/armsr/armv8/${{ env.DISTRO }}-${{ env.VERSION }}-armsr-armv8-generic-ext4-combined.img.gz
-          asset_name: ${{ env.DISTRO }}-${{ env.VERSION }}-armsr-armv8-generic-ext4-combined.img.gz
+          asset_path: imagebuilder/bin/targets/armsr/armv8/aniwrt-${{ env.DISTRO }}-${{ env.VERSION }}.img.gz
+          asset_name: aniwrt-${{ env.DISTRO }}-${{ env.VERSION }}.img.gz
           asset_content_type: application/octet-stream
