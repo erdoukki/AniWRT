@@ -7,6 +7,7 @@ on:
         description: "Select resources"
         required: true
         default: "openwrt:23.05.4"
+        type: choice
         options:
           - openwrt:23.05.4
           - openwrt:23.05.3
@@ -19,7 +20,8 @@ on:
       enable_mod_sdcard:
         description: "Enable MOD SD Card"
         required: false
-        default: false
+        default: "false"
+        type: boolean
 
 jobs:
   build:
