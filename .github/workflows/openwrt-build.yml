@@ -30,14 +30,14 @@ jobs:
         id: parse_resources
         run: |
           resources="${{ github.event.inputs.resources }}"
-          export DISTRO="${resources%%:*}"
-          export VERSION="${resources##*:}"
+          DISTRO="${resources%%:*}"
+          VERSION="${resources##*:}"
           echo "DISTRO=${DISTRO}" >> $GITHUB_ENV
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Download ImageBuilder
         run: |
-          wget https://downloads.${DISTRO}.org/releases/${VERSION}/targets/armsr/armv8/${DISTRO}-imagebuilder-${VERSION}-armsr-armv8.Linux-x86_64.tar.xz -O imagebuilder.tar.xz
+          wget https://downloads.${{ env.DISTRO }}.org/releases/${{ env.VERSION }}/targets/armsr/armv8/${{ env.DISTRO }}-imagebuilder-${{ env.VERSION }}-armsr-armv8.Linux-x86_64.tar.xz -O imagebuilder.tar.xz
           mkdir imagebuilder
           tar -xf imagebuilder.tar.xz -C imagebuilder --strip-components=1
 
@@ -46,12 +46,23 @@ jobs:
           cd imagebuilder
           make image PROFILE="generic" ROOTFS_PARTSIZE=${{ github.event.inputs.rootfs_partsize }}
 
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.DISTRO }}-${{ env.VERSION }}
+          release_name: ${{ env.DISTRO }} ${{ env.VERSION }}
+          draft: false
+          prerelease: false
+
       - name: Upload image to GitHub Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ github.event.repository.releases_url }}/assets?name=${DISTRO}-${VERSION}-armsr-armv8-generic-ext4-combined.img.gz
-          asset_path: bin/targets/armsr/armv8/${DISTRO}-${VERSION}-armsr-armv8-generic-ext4-combined.img.gz
-          asset_name: ${DISTRO}-${VERSION}-armsr-armv8-generic-ext4-combined.img.gz
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: imagebuilder/bin/targets/armsr/armv8/generic-ext4-combined.img.gz
+          asset_name: ${{ env.DISTRO }}-${{ env.VERSION }}-armsr-armv8-generic-ext4-combined.img.gz
           asset_content_type: application/octet-stream
