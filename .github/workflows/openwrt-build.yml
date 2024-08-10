@@ -46,10 +46,6 @@ jobs:
           cd imagebuilder
           make image PROFILE="generic" ROOTFS_PARTSIZE=${{ github.event.inputs.rootfs_partsize }}
 
-      - name: List output files
-        run: |
-          find imagebuilder/bin/targets -type f
-
       - name: Create GitHub Release
         id: create_release
         uses: actions/create-release@v1
@@ -67,6 +63,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: imagebuilder/bin/targets/armsr/armv8/generic-ext4-combined.img.gz # Update based on output
+          asset_path: imagebuilder/bin/targets/armsr/armv8/${{ env.DISTRO }}-${{ env.VERSION }}-armsr-armv8-generic-ext4-combined.img.gz
           asset_name: ${{ env.DISTRO }}-${{ env.VERSION }}-armsr-armv8-generic-ext4-combined.img.gz
           asset_content_type: application/octet-stream
