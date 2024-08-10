@@ -37,13 +37,13 @@ jobs:
 
       - name: Download ImageBuilder
         run: |
-          IMAGEBUILDER_URL="https://downloads.${DISTRO}.org/releases/${VERSION}/targets/armsr/armv8/${DISTRO}-imagebuilder-${VERSION}-armsr-armv8.Linux-x86_64.tar.xz"
-          wget ${IMAGEBUILDER_URL} -O imagebuilder.tar.xz
-          tar -xf imagebuilder.tar.xz
+          wget https://downloads.${DISTRO}.org/releases/${VERSION}/targets/armsr/armv8/${DISTRO}-imagebuilder-${VERSION}-armsr-armv8.Linux-x86_64.tar.xz -O imagebuilder.tar.xz
+          mkdir imagebuilder
+          tar -xf imagebuilder.tar.xz -C imagebuilder --strip-components=1
 
       - name: Build image
         run: |
-          cd ${DISTRO}-imagebuilder-${VERSION}-armsr-armv8.Linux-x86_64
+          cd imagebuilder
           make image PROFILE="generic" ROOTFS_PARTSIZE=${{ github.event.inputs.rootfs_partsize }}
 
       - name: Upload image to GitHub Release
@@ -51,7 +51,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ github.event.repository.releases_url }}/assets?name=generic-ext4-combined-${{ env.DISTRO }}-${{ env.VERSION }}.img
-          asset_path: ${DISTRO}-imagebuilder-${VERSION}-armsr-armv8.Linux-x86_64/output/generic-ext4-combined-custom.img
-          asset_name: generic-ext4-combined-${{ env.DISTRO }}-${{ env.VERSION }}.img
+          upload_url: ${{ github.event.repository.releases_url }}/assets?name=${DISTRO}-${VERSION}-armsr-armv8-generic-ext4-combined.img.gz
+          asset_path: bin/targets/armsr/armv8/${DISTRO}-${VERSION}-armsr-armv8-generic-ext4-combined.img.gz
+          asset_name: ${DISTRO}-${VERSION}-armsr-armv8-generic-ext4-combined.img.gz
           asset_content_type: application/octet-stream
