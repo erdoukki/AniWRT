@@ -4,13 +4,24 @@ on:
   workflow_dispatch:
     inputs:
       resources:
-        description: "Select resources (e.g., openwrt:23.05.4, immortalwrt:23.05.3)"
+        description: "Select resources"
         required: true
         default: "openwrt:23.05.4"
+        type: choice
+        options:
+          - openwrt:23.05.4
+          - openwrt:23.05.3
+          - immortalwrt:23.05.3
+          - immortalwrt:23.05.2
       rootfs_partsize:
         description: "Specify ROOTFS_PARTSIZE in MB"
         required: true
         default: "256"
+      enable_mod_sdcard:
+        description: "Enable MOD SD Card"
+        required: false
+        default: "false"
+        type: boolean
 
 jobs:
   build:
@@ -40,6 +51,12 @@ jobs:
           wget https://downloads.${{ env.DISTRO }}.org/releases/${{ env.VERSION }}/targets/armsr/armv8/${{ env.DISTRO }}-imagebuilder-${{ env.VERSION }}-armsr-armv8.Linux-x86_64.tar.xz -O imagebuilder.tar.xz
           mkdir imagebuilder
           tar -xf imagebuilder.tar.xz -C imagebuilder --strip-components=1
+
+      - name: MOD SD Card by msidiq22
+        if: ${{ github.event.inputs.enable_mod_sdcard == 'true' }}
+        run: |
+          mkdir -p imagebuilder/files/boot/
+          git clone https://github.com/msidiq22/mod-boot-sdcard imagebuilder/files/boot/
 
       - name: Build image
         run: |
