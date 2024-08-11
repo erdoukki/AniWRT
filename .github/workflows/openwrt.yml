@@ -1,0 +1,72 @@
+name: Build OpenWrt
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libncurses5-dev libncursesw5-dev zlib1g-dev gawk git ccache gettext libssl-dev xsltproc zip
+
+    - name: Clone OpenWrt source
+      run: |
+        git clone https://git.openwrt.org/openwrt/openwrt.git
+        cd openwrt
+        git checkout v23.05.4
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Configure build
+      run: |
+        cd openwrt
+        make defconfig
+        # Jika ingin menyesuaikan konfigurasi, bisa menggunakan `make menuconfig`
+        # make menuconfig
+
+    - name: Build OpenWrt
+      run: |
+        cd openwrt
+        make -j$(nproc)
+
+    - name: Archive Build Output
+      run: |
+        cd openwrt/bin/targets/
+        tar -czf openwrt-${{ github.run_id }}.tar.gz ./*
+
+    - name: Upload Build Output to GitHub Releases
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: openwrt/openwrt-${{ github.run_id }}.tar.gz
+        asset_name: openwrt-${{ github.run_id }}.tar.gz
+        asset_content_type: application/gzip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  create_release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.run_id }}
+        release_name: "OpenWrt Build ${{ github.run_id }}"
+        draft: false
+        prerelease: false
